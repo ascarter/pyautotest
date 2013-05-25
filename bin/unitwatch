@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""testwatch
+"""
+
+import sys
+import unitwatch.cli
+
+def main():
+    return unitwatch.cli.main()
+
+if __name__ == '__main__':
+    sys.exit(main())
