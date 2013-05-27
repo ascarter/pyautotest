@@ -8,12 +8,13 @@ import subprocess
 import sys
 import time
 import types
+import unittest
 
 from distutils.spawn import find_executable
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-logger = logging.getLogger('unitwatch')
+logger = logging.getLogger('pyautotest')
 
 class Notifier(object):
 	def __init__(self):
@@ -72,24 +73,49 @@ class ChangeHandler(FileSystemEventHandler):
 	
 	def __init__(self):
 		self.notifier = Notifier()
-	
-	def _get_now(self):
-		return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-	
-	def _getext(self, filename):
-		return os.path.splitext(filename)[-1].lower()
-		
+			
 	def on_any_event(self, event):
 		if event.is_directory:
 			return
-		if self._getext(event.src_path) == '.py':
+		(filename, ext) = os.path.splitext(event.src_path)
+		if ext.lower() == '.py':
+			logger.info('{0} {1}'.format(os.path.relpath(event.src_path), event.event_type))
 			self.run_tests()
 	
 	def run_tests(self):
+		"""Public: Run unit tests with unittest discover
+		"""
+		
+		(pipein, pipeout) = os.pipe()
+		pid = os.fork()
+		if pid:
+			os.close(pipeout)
+			now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+			logger.info("Running unit tests at {}".format(now))
+			pipein = os.fdopen(pipein)
+			output = pipein.read()
+			print(output)
+			results = output.splitlines()
+			subtitle = results[-1]
+			info_text = results[-3]
+			if self.notifier:
+				self.notifier.notify("Unit Tests", subtitle, info_text, group="unitwatch")
+				
+		else:
+			os.close(pipein)
+			out = os.fdopen(pipeout, 'w', 0)
+			loader = unittest.defaultTestLoader
+			tests = loader.discover('.')
+			runner = unittest.TextTestRunner(out)
+			runner.run(tests)
+			os._exit(0)		
+	
+	def run_tests_cmd(self):
 		"""Private: Run unit tests with unittest
 		"""
 		
-		logger.info("Running unit tests at {}".format(self._get_now()))
+		now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+		logger.info("Running unit tests at {}".format(now))
 		cmd = "python -m unittest discover -b"
 		proc = subprocess.Popen(["python", "-m", "unittest", "discover"], stderr=subprocess.PIPE)
 		proc_out, proc_err = proc.communicate()

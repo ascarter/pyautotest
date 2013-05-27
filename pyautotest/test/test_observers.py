@@ -1,7 +1,7 @@
 import unittest
-from unitwatch import observers
+from pyautotest import observers
 
-class CLITestCase(unittest.TestCase):
+class ObserversTestCase(unittest.TestCase):
 	def setUp(self):
 		self.maxDiff = None
 	
@@ -10,6 +10,6 @@ class CLITestCase(unittest.TestCase):
 	
 	def test_notify(self):
 		self.assertTrue(True)
-	
+
 if __name__ == '__main__':
 	unittest.main()

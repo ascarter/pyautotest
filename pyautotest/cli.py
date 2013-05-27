@@ -2,15 +2,17 @@
 
 import logging
 import os
+import signal
 import time
+
 from watchdog.observers import Observer
-from unitwatch.observers import Notifier, ChangeHandler
+from pyautotest.observers import Notifier, ChangeHandler
 
 # Configure logging
 logging.basicConfig(format='%(asctime)s (%(name)s) [%(levelname)s]: %(message)s',
 	datefmt='%m-%d-%Y %H:%M:%S',
 	level=logging.INFO)
-logger = logging.getLogger('unitwatch')
+logger = logging.getLogger('pyautotest')
 
 def main():
 	while True:
@@ -18,6 +20,10 @@ def main():
 		event_handler.run_tests()
 		observer = Observer()
 		observer.schedule(event_handler, os.getcwd(), recursive=True)
+
+		# Avoid child zombie processes
+		signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+		
 		observer.start()
 		try:
 			while True:

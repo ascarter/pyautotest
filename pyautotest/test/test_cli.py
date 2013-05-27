@@ -1,5 +1,5 @@
 import unittest
-from unitwatch import cli
+from pyautotest import cli
 
 class CLITestCase(unittest.TestCase):
 	def setUp(self):

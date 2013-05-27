@@ -2,20 +2,20 @@
 
 from distutils.core import setup
 
-packages = [ 'unitwatch' ]
+packages = [ 'pyautotest' ]
 requires = [ 'watchdog>=0.6.0' ]
-scripts  = [ 'bin/unitwatch' ]
+scripts  = [ 'bin/autotest' ]
 setup(
-	name='unitwatch',
+	name='pyautotest',
 	version='1.0',
 	description='Autotest Python unittest modules',
 	# long_description=open('README.rst').read(),
 	author='Andrew Carter',
 	author_email='andrew@ascarter.net',
-	url='http://github.com/unitwatch',
+	url='http://github.com/ascarter/pyautotest',
 	scripts=scripts,
 	packages=packages,
-	package_dir={ 'unitwatch': 'unitwatch' },
+	package_dir={ 'pyautotest': 'pyautotest' },
 	install_requires=requires,
 	license=open('LICENSE').read(),
 	classifiers=(
