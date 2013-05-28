@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -73,56 +74,76 @@ class ChangeHandler(FileSystemEventHandler):
 	
 	def __init__(self):
 		self.notifier = Notifier()
+		self.project_name = os.path.basename(os.getcwd())
+		self.test_total_check = re.compile('^Ran (\\d+) .*$')
+		self.test_status_check = re.compile('^(FAILED|OK)')
+		self.test_failures_check = re.compile('((failures|skipped)\\=(\\d+))')
 			
 	def on_any_event(self, event):
 		if event.is_directory:
 			return
 		(filename, ext) = os.path.splitext(event.src_path)
 		if ext.lower() == '.py':
-			logger.info('{0} {1}'.format(os.path.relpath(event.src_path), event.event_type))
-			self.run_tests()
+			reason = '{0} {1}'.format(os.path.relpath(event.src_path), event.event_type)
+			self.run_tests(reason)
 	
-	def run_tests(self):
-		"""Public: Run unit tests with unittest discover
-		"""
+	
+	def _check_results(self, output, reason):
+		if not output:
+			return
+			
+		passed = 0
+		failed = 0
+		skipped = 0
+		total = 0
 		
-		(pipein, pipeout) = os.pipe()
-		pid = os.fork()
-		if pid:
-			os.close(pipeout)
-			now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-			logger.info("Running unit tests at {}".format(now))
-			pipein = os.fdopen(pipein)
-			output = pipein.read()
-			print(output)
-			results = output.splitlines()
-			subtitle = results[-1]
-			info_text = results[-3]
-			if self.notifier:
-				self.notifier.notify("Unit Tests", subtitle, info_text, group="unitwatch")
+		title = "{0} unit tests".format(self.project_name)
+		lines = output.splitlines()
+		
+		matches = self.test_total_check.match(lines[-3])
+		total = int(matches.group(1)) if matches.group(1) else 0
+
+		matches = self.test_status_check.match(lines[-1])
+		status = matches.group(1)
+		
+		matches = self.test_failures_check.findall(lines[-1])
+		for (m, label, value) in matches:
+			if label == 'failures':
+				failed = int(value) if value else 0
+			if label == 'skipped':
+				skipped = int(value) if value else 0
 				
-		else:
-			os.close(pipein)
-			out = os.fdopen(pipeout, 'w', 0)
-			loader = unittest.defaultTestLoader
-			tests = loader.discover('.')
-			runner = unittest.TextTestRunner(out)
-			runner.run(tests)
-			os._exit(0)		
+		passed = total - failed - skipped
+		percentage = (float(passed) / float(total - skipped)) * 100.0
+		
+		subtitle="{0}".format(status)
+		if total:
+			subtitle += " {0} {1},".format(total, 'tests' if total > 1 else 'test')
+		if failed:
+			subtitle += " {0} {1},".format(failed, 'failure' if failed == 1 else 'failures')
+		if skipped:
+			subtitle += " {0} {1},".format(skipped, 'skipped')
+		subtitle += " {0:.1f}%".format(percentage)
+		info_text = reason
+
+		logger.info(subtitle)
+		if self.notifier:
+			self.notifier.notify(title, subtitle, info_text, group=title)
 	
-	def run_tests_cmd(self):
-		"""Private: Run unit tests with unittest
+	def run_tests(self, reason="Unit test run"):
+		"""Private: Run unit tests with unittest discover
 		"""
 		
 		now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-		logger.info("Running unit tests at {}".format(now))
+		logger.info("Running unit tests at {0}".format(now))
+		if reason:
+			logger.info("  {0}".format(reason))
+		
 		cmd = "python -m unittest discover -b"
 		proc = subprocess.Popen(["python", "-m", "unittest", "discover"], stderr=subprocess.PIPE)
 		proc_out, proc_err = proc.communicate()
-		print(proc_err)
-		results = proc_err.splitlines()
-		result = "Failed" if proc.returncode else "Passed"
-		subtitle = results[-1]
-		info_text = results[-3]
-		if self.notifier:
-			self.notifier.notify("Unit Tests", subtitle, info_text, group="unitwatch")
+		if proc_out:
+			sys.stdout.write(str(proc_out))
+		if proc_err:
+			sys.stderr.write(str(proc_err))
+		self._check_results(proc_err, reason)
