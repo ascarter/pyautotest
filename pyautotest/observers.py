@@ -84,37 +84,44 @@ class ChangeHandler(FileSystemEventHandler):
 		if ext.lower() == '.py':
 			reason = '{0} {1}'.format(os.path.relpath(event.src_path), event.event_type)
 			self.run_tests(reason)
-	
-	
+		
 	def _check_results(self, output, reason):
 		if not output:
 			return
 			
+		status = None
 		passed = 0
 		failed = 0
 		skipped = 0
 		total = 0
+		percentage = 0
 		
 		title = "{0} unit tests".format(self.project_name)
 		lines = output.splitlines()
 		
 		matches = self.test_total_check.match(lines[-3])
-		total = int(matches.group(1)) if matches.group(1) else 0
+		if matches:
+			total = int(matches.group(1)) if matches.group(1) else 0
 
-		matches = self.test_status_check.match(lines[-1])
-		status = matches.group(1)
+		if matches:
+			matches = self.test_status_check.match(lines[-1])
+			status = matches.group(1)
 		
 		matches = self.test_failures_check.findall(lines[-1])
-		for (m, label, value) in matches:
-			if label == 'failures':
-				failed = int(value) if value else 0
-			if label == 'skipped':
-				skipped = int(value) if value else 0
+		if matches:
+			for (m, label, value) in matches:
+				if label == 'failures':
+					failed = int(value) if value else 0
+				if label == 'skipped':
+					skipped = int(value) if value else 0
 				
 		passed = total - failed - skipped
-		percentage = (float(passed) / float(total - skipped)) * 100.0
+		if total > 0:
+			percentage = (float(passed) / float(total - skipped)) * 100.0
 		
-		subtitle="{0}".format(status)
+		subtitle = ""
+		if status:
+			subtitle += "{0}".format(status)
 		if total:
 			subtitle += " {0} {1},".format(total, 'tests' if total > 1 else 'test')
 		if failed:
@@ -136,9 +143,7 @@ class ChangeHandler(FileSystemEventHandler):
 		logger.info("Running unit tests at {0}".format(now))
 		if reason:
 			logger.info("  {0}".format(reason))
-		
-		cmd = "python -m unittest discover -b"
-		proc = subprocess.Popen(["python", "-m", "unittest", "discover"], stderr=subprocess.PIPE)
+		proc = subprocess.Popen(["python", "-m", "unittest", "discover", "--buffer"], stderr=subprocess.PIPE)
 		proc_out, proc_err = proc.communicate()
 		if proc_out:
 			sys.stdout.write(str(proc_out))
