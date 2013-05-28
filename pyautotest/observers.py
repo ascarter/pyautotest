@@ -11,7 +11,6 @@ import time
 import types
 import unittest
 
-from distutils.spawn import find_executable
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -22,10 +21,9 @@ class Notifier(object):
 		self.notifier = None
 		
 		if platform.system() == 'Darwin':
-			expanded_path = os.environ['PATH'] + os.pathsep + "/Applications/terminal-notifier.app/Contents/MacOS"
-			self.notifier = find_executable("terminal-notifier", path=expanded_path)			
+			self.notifier = "/usr/bin/open"
 			def _get_args(self, title, subtitle, info_text, sound, group, open_url):
-				args = []
+				args = ["-b", "nl.superalloy.oss.terminal-notifier", "--args"]
 				if title:
 					args.extend(["-title", '"{}"'.format(title)])
 				if subtitle:
@@ -41,7 +39,6 @@ class Notifier(object):
 				return args
 			self._get_args = types.MethodType(_get_args, self)
 		elif platform.system() == 'Linux':
-			self.notifier = find_executable("notify-send")
 			self.notifier = 'notify-send'
 			def _get_args(self, title, subtitle, info_text, sound, group, open_url):
 				args = []
@@ -66,6 +63,7 @@ class Notifier(object):
 		if self.notifier:
 			cmd = [self.notifier]
 			cmd.extend(self._get_args(title, subtitle, info_text, sound, group, open_url))
+			logger.debug("Notify command: {0}".format(' '.join(cmd)))
 			subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	
 class ChangeHandler(FileSystemEventHandler):
