@@ -145,10 +145,10 @@ class ChangeHandler(FileSystemEventHandler):
 			logger.info("  {0}".format(reason))
 		cmd = ["python", "-m", "unittest", "discover", "--buffer"]
 		logger.debug("Exec tests: {0}".format(" ".join(cmd)))
-		proc = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+		proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		proc_out, proc_err = proc.communicate()
 		if proc_out:
-			sys.stdout.write(str(proc_out))
+			logger.debug(proc_out)
 		if proc_err:
-			sys.stderr.write(str(proc_err))
+			logger.info(proc_err)
 		self._check_results(proc_err, reason)
