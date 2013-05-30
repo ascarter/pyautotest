@@ -75,7 +75,7 @@ class ChangeHandler(FileSystemEventHandler):
 		self.project_name = os.path.basename(os.getcwd())
 		self.test_total_check = re.compile('^Ran (\\d+) .*$')
 		self.test_status_check = re.compile('^(FAILED|OK)')
-		self.test_failures_check = re.compile('((failures|skipped)\\=(\\d+))')
+		self.test_failures_check = re.compile('((failures|skipped|errors)\\=(\\d+))')
 			
 	def on_any_event(self, event):
 		if event.is_directory:
@@ -92,6 +92,7 @@ class ChangeHandler(FileSystemEventHandler):
 		status = None
 		passed = 0
 		failed = 0
+		errors = 0
 		skipped = 0
 		total = 0
 		percentage = 0
@@ -114,8 +115,10 @@ class ChangeHandler(FileSystemEventHandler):
 					failed = int(value) if value else 0
 				if label == 'skipped':
 					skipped = int(value) if value else 0
+				if label == 'errors':
+					errors = int(value) if value else 0
 				
-		passed = total - failed - skipped
+		passed = total - failed - errors - skipped
 		if total > 0:
 			percentage = (float(passed) / float(total - skipped)) * 100.0
 		
@@ -126,6 +129,8 @@ class ChangeHandler(FileSystemEventHandler):
 			subtitle += " {0} {1},".format(total, 'tests' if total > 1 else 'test')
 		if failed:
 			subtitle += " {0} {1},".format(failed, 'failure' if failed == 1 else 'failures')
+		if errors:
+			subtitle += " {0} {1},".format(errors, 'error' if errors == 1 else 'errors')
 		if skipped:
 			subtitle += " {0} {1},".format(skipped, 'skipped')
 		subtitle += " {0:.1f}%".format(percentage)
