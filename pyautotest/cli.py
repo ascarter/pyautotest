@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
 import os
 import signal
 import time
 
-from optparse import OptionParser
 from watchdog.observers import Observer
 from pyautotest.observers import Notifier, ChangeHandler
 
@@ -16,13 +16,17 @@ logging.basicConfig(format='%(asctime)s (%(name)s) [%(levelname)s]: %(message)s'
 logger = logging.getLogger('pyautotest')
 
 def main():
-	parser = OptionParser("usage: %prog [options]")
-	parser.set_defaults(loglevel="INFO")
-	parser.add_option("-l", "--log-level", action="store", dest="loglevel")
-	(options, args) = parser.parse_args()
+	parser = argparse.ArgumentParser(description="Continuously run unit tests when changes detected")
+	parser.add_argument('-l', '--log-level',
+		metavar='L',
+		default='INFO',
+		dest='loglevel',
+		action='store',
+		help='set logger level')
+	args = parser.parse_args()
 
 	# Handle options
-	logger.setLevel(getattr(logging, options.loglevel.upper(), None))
+	logger.setLevel(getattr(logging, args.loglevel.upper(), None))
 
 	while True:
 		event_handler = ChangeHandler()
