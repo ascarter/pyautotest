@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from distutils.core import setup
+import os
+from setuptools import setup
+
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 packages = [ 'pyautotest' ]
 requires = [ 'watchdog>=0.6.0' ]
-scripts  = [ 'bin/autotest' ]
+scripts = [ 'bin/autotest' ]
+
 setup(
 	name='pyautotest',
-	version='1.0',
+	version='0.1.0',
 	description='Autotest Python unittest modules',
-	# long_description=open('README.rst').read(),
+	long_description=open('README.rst').read(),
 	author='Andrew Carter',
 	author_email='andrew@ascarter.net',
 	url='http://github.com/ascarter/pyautotest',
@@ -17,12 +22,19 @@ setup(
 	packages=packages,
 	package_dir={ 'pyautotest': 'pyautotest' },
 	install_requires=requires,
-	license=open('LICENSE').read(),
-	classifiers=(
-		'Development Status :: 3 - Alpha',
+	license=read('LICENSE'),
+	classifiers=[
+		'Development Status :: 4 - Beta',
+		'Environment :: Console',
 		'Intended Audience :: Developers',
+		'License :: OSI Approved :: MIT License',
 		'Natural Language :: English',
-		'License :: OSI Approved :: MIT',
-		'Programming Language :: Python'
-	)
+		'Operating System :: MacOS :: MacOS X',
+		'Operating System :: POSIX',
+		'Operating System :: Unix',
+		'Programming Language :: Python',
+		'Topic :: Software Development :: Libraries',
+		'Topic :: Software Development :: Libraries :: Python Modules',
+		'Topic :: Software Development :: Testing'
+	]
 )
